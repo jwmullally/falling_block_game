@@ -110,10 +110,10 @@ class FallingBlockGame:
         self.board = [[' ' for x in range(self.WIDTH)] for y in range(self.HEIGHT)]
         self.scores = {1: 0, 2: 0, 3: 0, 4: 0}
         self.next_piece = random.choice(list(pieces.keys()))
-        self.get_next_piece()
+        self.set_next_piece()
         self.game_over = False
 
-    def get_next_piece(self):
+    def set_next_piece(self):
         self.piece_name = self.next_piece
         self.next_piece = random.choice(list(pieces.keys()))
         self.piece = deepcopy(pieces[self.piece_name])
@@ -159,11 +159,11 @@ class FallingBlockGame:
             lines, self.board = handle_scores(self.board)
             if lines:
                 self.scores[lines] += 1
-            self.get_next_piece()
-            return True
+            self.set_next_piece()
+            if is_collision(self.board, self.piece, self.x, self.y):
+                self.game_over = True
         else:
             self.y += 1
-            return False
 
     def move(self, dx, dy):
         if not is_collision(self.board, self.piece, self.x + dx, self.y + dy):
@@ -171,14 +171,18 @@ class FallingBlockGame:
             self.y += dy
 
     def rotate_left(self):
-        self.piece = rotate_left(self.piece)
+        new_piece = rotate_left(self.piece)
+        if not is_collision(self.board, new_piece, self.x, self.y):
+            self.piece = new_piece
 
     def rotate_right(self):
-        self.piece = rotate_right(self.piece)
+        new_piece = rotate_right(self.piece)
+        if not is_collision(self.board, new_piece, self.x, self.y):
+            self.piece = new_piece
 
     def drop(self):
         while not is_collision(self.board, self.piece, self.x, self.y+1):
-            self.fall()
+            self.y += 1
 
    
 def main(stdscr):
@@ -223,6 +227,13 @@ def main(stdscr):
             stdscr.clear()
             game.draw(stdscr)
             stdscr.refresh()
+        if game.game_over:
+            stdscr.addstr(10, 10, 'Game over!')
+            stdscr.refresh()
+            time.sleep(3)
+            return
+
+
 
 if __name__ == '__main__':
     curses.wrapper(main)
