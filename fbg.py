@@ -112,10 +112,18 @@ class BlockBoard:
         self.x = self.WIDTH//2 - len(self.piece[0])//2
         self.y = 0
 
+    def draw_border(self, scr):
+        scr.addstr(0, 0, '*'*(2*self.WIDTH+2))
+        scr.addstr(self.HEIGHT+1, 0, '*'*(2*self.WIDTH+2))
+        for y in range(1, self.HEIGHT+1):
+            scr.addstr(y, 0, '*')
+            scr.addstr(y, self.WIDTH*2+1, '*')
+        scr.addstr(self.HEIGHT+3, 0, 'Score: {}'.format(str(self.scores)))
+
     def draw(self, scr):
-        for y in range(len(self.board)):
+        for y in range(self.HEIGHT):
             py = y - self.y
-            for x in range(len(self.board[y])):
+            for x in range(self.WIDTH):
                 px = x - self.x
                 if py >= 0 and py < len(self.piece) and px >= 0 and px < len(self.piece[py]) and self.piece[py][px] != ' ':
                     block = self.piece[py][px]
@@ -123,13 +131,9 @@ class BlockBoard:
                     block = self.board[y][x]
                 if block != ' ':
                     color = colors[block]
-                    scr.addstr(y, x*2, '[]', curses.color_pair(color))
-        scr.addstr(self.HEIGHT, 0, 'Score: {}'.format(str(self.scores)))
+                    scr.addstr(y+1, x*2+1, '[]', curses.color_pair(color))
+        self.draw_border(scr)
         return
-
-    def draw_screen(self):
-        sys.stdout.write('\033[H')
-        sys.stdout.write(self.draw())
 
     def fall(self):
         if is_collision(self.board, self.piece, self.x, self.y+1):
@@ -184,12 +188,15 @@ def main(stdscr):
                 game.move(1, 0)
             elif cmd == 's':
                 game.move(0, 1)
-                #game.drop()
-                #fall_time = datetime.datetime.now() + datetime.timedelta(microseconds=FALL_DELAY)
+            elif cmd == 'w':
+                game.drop()
+                fall_time = datetime.datetime.now() + datetime.timedelta(microseconds=FALL_DELAY)
             elif cmd == 'z':
                 game.rotate_left()
             elif cmd == 'x':
                 game.rotate_right()
+            elif cmd == 'p':
+                return
             redraw = True
         if datetime.datetime.now() > fall_time:
             game.fall()
