@@ -92,9 +92,15 @@ def handle_scores(board):
     return lines, new_board
 
 
+def draw_blocks(scr, blocks, oy, ox):
+    for y in range(len(blocks)):
+        for x in range(len(blocks[y])):
+            if blocks[y][x] != ' ':
+                color = colors[blocks[y][x]]
+                scr.addstr(oy+y, ox+2*x, '[]', curses.color_pair(color))
 
 
-class BlockBoard:
+class FallingBlockGame:
 
     WIDTH = 12
     HEIGHT = 24
@@ -112,28 +118,29 @@ class BlockBoard:
         self.x = self.WIDTH//2 - len(self.piece[0])//2
         self.y = 0
 
-    def draw_border(self, scr):
+    def draw_next_piece(self, scr, oy, ox):
+        scr.addstr(oy, ox, 'Next piece: {}'.format(self.next_piece))
+        draw_blocks(scr, pieces[self.next_piece], oy+1, ox)
+
+    def draw_score(self, scr, oy, ox):
+        scr.addstr(oy, ox, 'Score: {}'.format(str(self.scores)))
+
+    def draw_border(self, scr, oy, ox):
         scr.addstr(0, 0, '*'*(2*self.WIDTH+2))
         scr.addstr(self.HEIGHT+1, 0, '*'*(2*self.WIDTH+2))
         for y in range(1, self.HEIGHT+1):
             scr.addstr(y, 0, '*')
-            scr.addstr(y, self.WIDTH*2+1, '*')
-        scr.addstr(self.HEIGHT+3, 0, 'Score: {}'.format(str(self.scores)))
+            scr.addstr(y, 2*self.WIDTH+1, '*')
+
+    def draw_board(self, scr, oy, ox):
+        draw_blocks(scr, self.board, oy, ox)
+        draw_blocks(scr, self.piece, oy + self.y, ox + 2*self.x)
 
     def draw(self, scr):
-        for y in range(self.HEIGHT):
-            py = y - self.y
-            for x in range(self.WIDTH):
-                px = x - self.x
-                if py >= 0 and py < len(self.piece) and px >= 0 and px < len(self.piece[py]) and self.piece[py][px] != ' ':
-                    block = self.piece[py][px]
-                else:
-                    block = self.board[y][x]
-                if block != ' ':
-                    color = colors[block]
-                    scr.addstr(y+1, x*2+1, '[]', curses.color_pair(color))
-        self.draw_border(scr)
-        return
+        self.draw_board(scr, 1, 1)
+        self.draw_border(scr, 0, 0)
+        self.draw_next_piece(scr, 1, 2*self.WIDTH+4)
+        self.draw_score(scr, self.HEIGHT+2, 0)
 
     def fall(self):
         if is_collision(self.board, self.piece, self.x, self.y+1):
@@ -170,7 +177,7 @@ def main(stdscr):
     for i in range(0, 8):
         curses.init_pair(i, 0, i)
 
-    game = BlockBoard()
+    game = FallingBlockGame()
 
     FALL_DELAY = 250000 # microseconds
 
