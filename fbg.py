@@ -9,13 +9,13 @@ import time
 
 
 colors = {
-    'I': 8,
-    'O': 9,
-    'T': 10,
-    'J': 11,
-    'L': 12,
-    'S': 13,
-    'Z': 14,
+    'I': 1,
+    'O': 2,
+    'T': 3,
+    'J': 4,
+    'L': 5,
+    'S': 6,
+    'Z': 7,
     }
 
 
@@ -101,16 +101,16 @@ class BlockBoard:
 
     def __init__(self):
         self.board = [[' ' for x in range(self.WIDTH)] for y in range(self.HEIGHT)]
-        self.score = 0
+        self.scores = {1: 0, 2: 0, 3: 0, 4: 0}
         self.next_piece = random.choice(list(pieces.keys()))
         self.get_next_piece()
 
     def get_next_piece(self):
-        self.x = 0
-        self.y = 0
         self.piece_name = self.next_piece
         self.next_piece = random.choice(list(pieces.keys()))
         self.piece = deepcopy(pieces[self.piece_name])
+        self.x = self.WIDTH//2 - len(self.piece[0])//2
+        self.y = 0
 
     def draw(self, scr):
         for y in range(len(self.board)):
@@ -124,6 +124,7 @@ class BlockBoard:
                 if block != ' ':
                     color = colors[block]
                     scr.addstr(y, x*2, '[]', curses.color_pair(color))
+        scr.addstr(self.HEIGHT, 0, 'Score: {}'.format(str(self.scores)))
         return
 
     def draw_screen(self):
@@ -134,7 +135,8 @@ class BlockBoard:
         if is_collision(self.board, self.piece, self.x, self.y+1):
             self.board = merge_piece(self.board, self.piece, self.x, self.y)
             lines, self.board = handle_scores(self.board)
-            self.score += lines
+            if lines:
+                self.scores[lines] += 1
             self.get_next_piece()
             return True
         else:
@@ -153,20 +155,22 @@ class BlockBoard:
         self.piece = rotate_right(self.piece)
 
     def drop(self):
-        while not self.fall():
-            continue
+        while not is_collision(self.board, self.piece, self.x, self.y+1):
+            self.fall()
 
    
 def main(stdscr):
     stdscr.nodelay(1)
     curses.start_color()
     curses.use_default_colors()
-    for i in range(8, 15):
-        curses.init_pair(i, 8, i)
+    for i in range(0, 8):
+        curses.init_pair(i, 0, i)
 
     game = BlockBoard()
 
-    fall_time = datetime.datetime.now() + datetime.timedelta(microseconds=500000)
+    FALL_DELAY = 250000 # microseconds
+
+    fall_time = datetime.datetime.now() + datetime.timedelta(microseconds=FALL_DELAY)
 
     while True:
         redraw = False
@@ -179,7 +183,9 @@ def main(stdscr):
             elif cmd == 'd':
                 game.move(1, 0)
             elif cmd == 's':
-                game.drop()
+                game.move(0, 1)
+                #game.drop()
+                #fall_time = datetime.datetime.now() + datetime.timedelta(microseconds=FALL_DELAY)
             elif cmd == 'z':
                 game.rotate_left()
             elif cmd == 'x':
@@ -187,7 +193,7 @@ def main(stdscr):
             redraw = True
         if datetime.datetime.now() > fall_time:
             game.fall()
-            fall_time = datetime.datetime.now() + datetime.timedelta(microseconds=500000)
+            fall_time = datetime.datetime.now() + datetime.timedelta(microseconds=FALL_DELAY)
             redraw = True
         if redraw:
             stdscr.clear()
