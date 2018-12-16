@@ -16,6 +16,7 @@ colors = {
     'L': 5,
     'S': 6,
     'Z': 7,
+    'G': 8,
     }
 
 
@@ -110,6 +111,7 @@ class FallingBlockGame:
         self.scores = {1: 0, 2: 0, 3: 0, 4: 0}
         self.next_piece = random.choice(list(pieces.keys()))
         self.get_next_piece()
+        self.game_over = False
 
     def get_next_piece(self):
         self.piece_name = self.next_piece
@@ -126,14 +128,23 @@ class FallingBlockGame:
         scr.addstr(oy, ox, 'Score: {}'.format(str(self.scores)))
 
     def draw_border(self, scr, oy, ox):
-        scr.addstr(0, 0, '*'*(2*self.WIDTH+2))
-        scr.addstr(self.HEIGHT+1, 0, '*'*(2*self.WIDTH+2))
+        scr.addstr(oy, ox, '*'*(2*self.WIDTH+2))
+        scr.addstr(oy + self.HEIGHT+1, ox, '*'*(2*self.WIDTH+2))
         for y in range(1, self.HEIGHT+1):
-            scr.addstr(y, 0, '*')
-            scr.addstr(y, 2*self.WIDTH+1, '*')
+            scr.addstr(oy + y, ox, '*')
+            scr.addstr(oy + y, ox + 2*self.WIDTH+1, '*')
+
+    def draw_ghost_piece(self, scr, oy, ox):
+        ghost_piece = [['G' if block != ' ' else ' ' for block in row] for row in self.piece]
+        gx = self.x
+        gy = self.y
+        while not is_collision(self.board, ghost_piece, gx, gy+1):
+            gy += 1
+        draw_blocks(scr, ghost_piece, oy + gy, ox + 2*gx)
 
     def draw_board(self, scr, oy, ox):
         draw_blocks(scr, self.board, oy, ox)
+        self.draw_ghost_piece(scr, oy, ox)
         draw_blocks(scr, self.piece, oy + self.y, ox + 2*self.x)
 
     def draw(self, scr):
@@ -179,9 +190,8 @@ def main(stdscr):
 
     game = FallingBlockGame()
 
-    FALL_DELAY = 250000 # microseconds
-
-    fall_time = datetime.datetime.now() + datetime.timedelta(microseconds=FALL_DELAY)
+    FALL_DELAY = datetime.timedelta(microseconds=250000)
+    fall_time = datetime.datetime.now() + FALL_DELAY
 
     while True:
         redraw = False
@@ -195,19 +205,19 @@ def main(stdscr):
                 game.move(1, 0)
             elif cmd == 's':
                 game.move(0, 1)
-            elif cmd == 'w':
+            elif cmd in [' ', 'w']:
                 game.drop()
-                fall_time = datetime.datetime.now() + datetime.timedelta(microseconds=FALL_DELAY)
-            elif cmd == 'z':
+                fall_time = datetime.datetime.now() + FALL_DELAY
+            elif cmd == 'j':
                 game.rotate_left()
-            elif cmd == 'x':
+            elif cmd == 'k':
                 game.rotate_right()
             elif cmd == 'p':
                 return
             redraw = True
         if datetime.datetime.now() > fall_time:
             game.fall()
-            fall_time = datetime.datetime.now() + datetime.timedelta(microseconds=FALL_DELAY)
+            fall_time = datetime.datetime.now() + FALL_DELAY
             redraw = True
         if redraw:
             stdscr.clear()
