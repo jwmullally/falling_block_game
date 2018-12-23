@@ -22,10 +22,10 @@ colors = {
 
 pieces = {
     'I': [
-        [' ', ' ', ' ', ' '],
-        [' ', ' ', ' ', ' '],
-        ['I', 'I', 'I', 'I'],
-        [' ', ' ', ' ', ' ']],
+        [' ', 'I', ' ', ' '],
+        [' ', 'I', ' ', ' '],
+        [' ', 'I', ' ', ' '],
+        [' ', 'I', ' ', ' ']],
     'O': [
         ['O', 'O'],
         ['O', 'O']],
@@ -147,11 +147,11 @@ class FallingBlockGame:
         self.draw_ghost_piece(scr, oy, ox)
         draw_blocks(scr, self.piece, oy + self.y, ox + 2*self.x)
 
-    def draw(self, scr):
-        self.draw_board(scr, 1, 1)
-        self.draw_border(scr, 0, 0)
-        self.draw_next_piece(scr, 1, 2*self.WIDTH+4)
-        self.draw_score(scr, self.HEIGHT+2, 0)
+    def draw(self, scr, oy, ox):
+        self.draw_board(scr, oy + 1, ox + 1)
+        self.draw_border(scr, oy + 0, ox + 0)
+        self.draw_next_piece(scr, oy + 1, ox + 2*self.WIDTH+4)
+        self.draw_score(scr, oy + self.HEIGHT+2, ox + 0)
 
     def fall(self):
         if is_collision(self.board, self.piece, self.x, self.y+1):
@@ -189,10 +189,11 @@ def main(stdscr):
     stdscr.nodelay(1)
     curses.start_color()
     curses.use_default_colors()
-    for i in range(0, 8):
+    for i in range(0, 9):
         curses.init_pair(i, 0, i)
 
     game = FallingBlockGame()
+    game2 = FallingBlockGame()
 
     FALL_DELAY = datetime.timedelta(microseconds=250000)
     fall_time = datetime.datetime.now() + FALL_DELAY
@@ -205,27 +206,35 @@ def main(stdscr):
             cmd = chr(c)
             if cmd == 'a':
                 game.move(-1, 0)
+                game2.move(-1, 0)
             elif cmd == 'd':
                 game.move(1, 0)
+                game2.move(1, 0)
             elif cmd == 's':
                 game.move(0, 1)
-            elif cmd in [' ', 'w']:
+                game2.move(0, 1)
+            elif cmd == 'w':
                 game.drop()
-                fall_time = datetime.datetime.now() + FALL_DELAY
+                game2.drop()
+                fall_time = datetime.datetime.now()
             elif cmd == 'j':
                 game.rotate_left()
+                game2.rotate_left()
             elif cmd == 'k':
                 game.rotate_right()
+                game2.rotate_right()
             elif cmd == 'p':
                 return
             redraw = True
         if datetime.datetime.now() > fall_time:
             game.fall()
+            game2.fall()
             fall_time = datetime.datetime.now() + FALL_DELAY
             redraw = True
         if redraw:
             stdscr.clear()
-            game.draw(stdscr)
+            game.draw(stdscr, 0, 0)
+            game2.draw(stdscr, 0, 50)
             stdscr.refresh()
         if game.game_over:
             stdscr.addstr(10, 10, 'Game over!')
