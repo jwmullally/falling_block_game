@@ -236,33 +236,38 @@ def main(stdscr):
             cmd = chr(c)
             if cmd == 'a':
                 game.move(-1, 0)
+            elif cmd == 'j':
                 game2.move(-1, 0)
             elif cmd == 'd':
                 game.move(1, 0)
+            elif cmd == 'l':
                 game2.move(1, 0)
             elif cmd == 's':
                 game.move(0, 1)
+            elif cmd == 'k':
                 game2.move(0, 1)
             elif cmd == 'w':
                 game.drop()
+            elif cmd == 'i':
                 game2.drop()
-                fall_time = datetime.datetime.now()
-            elif cmd == 'j':
+            elif cmd == 'q':
                 game.rotate_left()
+            elif cmd == 'u':
                 game2.rotate_left()
-            elif cmd == 'k':
+            elif cmd == 'e':
                 game.rotate_right()
+            elif cmd == 'o':
                 game2.rotate_right()
-            elif cmd == 'p':
-                return
             redraw = True
-        for pending_score in game.get_pending_scores():
-            game2.pending_lines += max(pending_score-1, 0)
         if datetime.datetime.now() > fall_time:
             game.fall()
             game2.fall()
             fall_time = datetime.datetime.now() + FALL_DELAY
             redraw = True
+        for pending_score in game.get_pending_scores():
+            game2.pending_lines += max(pending_score-1, 0)
+        for pending_score in game2.get_pending_scores():
+            game.pending_lines += max(pending_score-1, 0)
         if redraw:
             stdscr.clear()
             game.draw(stdscr, 0, 0)
@@ -273,7 +278,11 @@ def main(stdscr):
             stdscr.refresh()
             time.sleep(3)
             return
-
+        if game2.game_over:
+            stdscr.addstr(10, 60, 'Game over!')
+            stdscr.refresh()
+            time.sleep(3)
+            return
 
 
 if __name__ == '__main__':
