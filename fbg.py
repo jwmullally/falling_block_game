@@ -17,6 +17,7 @@ colors = {
     'S': 6,
     'Z': 7,
     'G': 8,
+    'X': 10,
     }
 
 
@@ -93,6 +94,15 @@ def handle_scores(board):
     return lines, new_board
 
 
+def add_pending_lines(board, lines, gap_x):
+    overflow = False
+    new_board = [[b for b in board[y]] for y in range(lines, len(board))]
+    new_board.extend([['X' if x != gap_x else ' ' for x in range(len(board[0]))] for y in range(lines)])
+    overflow = any(b != ' ' for y in range(0, lines) for b in board[y])
+    return overflow, new_board
+
+
+
 def draw_blocks(scr, blocks, oy, ox):
     for y in range(len(blocks)):
         for x in range(len(blocks[y])):
@@ -112,6 +122,9 @@ class FallingBlockGame:
         self.next_piece = random.choice(list(pieces.keys()))
         self.set_next_piece()
         self.game_over = False
+        self.pending_scores = []
+        self.pending_lines = 0
+        self.gap_x = random.randrange(0, self.WIDTH)
 
     def set_next_piece(self):
         self.piece_name = self.next_piece
@@ -159,11 +172,23 @@ class FallingBlockGame:
             lines, self.board = handle_scores(self.board)
             if lines:
                 self.scores[lines] += 1
+                self.pending_scores.append(lines)
+            overflow = self.add_pending_lines()
+            if overflow:
+                self.game_over = True
             self.set_next_piece()
             if is_collision(self.board, self.piece, self.x, self.y):
                 self.game_over = True
         else:
             self.y += 1
+
+    def add_pending_lines(self):
+        if self.pending_lines:
+            overflow, self.board = add_pending_lines(self.board, self.pending_lines, self.gap_x)
+            self.pending_lines = 0
+            return overflow
+        return False
+
 
     def move(self, dx, dy):
         if not is_collision(self.board, self.piece, self.x + dx, self.y + dy):
@@ -184,12 +209,17 @@ class FallingBlockGame:
         while not is_collision(self.board, self.piece, self.x, self.y+1):
             self.y += 1
 
+    def get_pending_scores(self):
+        ret = self.pending_scores.copy()
+        self.pending_scores.clear()
+        return ret
+
    
 def main(stdscr):
     stdscr.nodelay(1)
     curses.start_color()
     curses.use_default_colors()
-    for i in range(0, 9):
+    for i in range(0, 16):
         curses.init_pair(i, 0, i)
 
     game = FallingBlockGame()
@@ -226,6 +256,8 @@ def main(stdscr):
             elif cmd == 'p':
                 return
             redraw = True
+        for pending_score in game.get_pending_scores():
+            game2.pending_lines += max(pending_score-1, 0)
         if datetime.datetime.now() > fall_time:
             game.fall()
             game2.fall()
